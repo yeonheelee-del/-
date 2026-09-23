@@ -19,7 +19,7 @@ echo  입력: %~1
 echo  처리 중...
 echo.
 
-py -m premiere_auto_edit.cli auto "%~1" --no-subtitle
+py -m premiere_auto_edit.cli auto "%~1" --no-subtitle --aggressive
 
 echo.
 echo  ========================================

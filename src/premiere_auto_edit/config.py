@@ -14,9 +14,10 @@ import yaml
 
 @dataclass
 class SilenceConfig:
-    threshold_db: float = -40.0
-    min_duration: float = 0.5
-    padding: float = 0.15
+    threshold_db: float = -30.0  # 기본값을 -30dB로 강화 (작은 소리도 감지)
+    min_duration: float = 0.3    # 최소 무음 길이를 0.3초로 줄여 더 많이 잡기
+    padding: float = 0.12        # 패딩을 줄여 더 타이트하게 컷
+    auto_calibrate: bool = True  # 자동 음량 분석 기반 임계값 설정
 
 
 @dataclass

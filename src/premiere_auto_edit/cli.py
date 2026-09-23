@@ -40,9 +40,11 @@ def main(ctx: click.Context) -> None:
 @click.option("-o", "--output-dir", type=click.Path(), default=None, help="출력 디렉토리")
 @click.option("-c", "--config", "config_path", type=click.Path(), default=None, help="설정 YAML 파일")
 @click.option("--preset", type=click.Choice(["youtube", "podcast", "broadcast"]), help="프리셋")
-@click.option("--silence-threshold", type=float, default=None, help="무음 임계값 (dB, 기본: -40)")
-@click.option("--silence-duration", type=float, default=None, help="최소 무음 길이 (초, 기본: 0.5)")
-@click.option("--silence-padding", type=float, default=None, help="발화 앞뒤 여유 (초, 기본: 0.15)")
+@click.option("--silence-threshold", type=float, default=None, help="무음 임계값 (dB, 기본: 자동)")
+@click.option("--silence-duration", type=float, default=None, help="최소 무음 길이 (초, 기본: 0.3)")
+@click.option("--silence-padding", type=float, default=None, help="발화 앞뒤 여유 (초, 기본: 0.12)")
+@click.option("--no-auto-calibrate", is_flag=True, default=False, help="자동 음량 분석 끄기 (수동 임계값 사용)")
+@click.option("--aggressive", is_flag=True, default=False, help="공격적 모드: 작은 소리도 최대한 삭제")
 @click.option("--target-lufs", type=float, default=None, help="목표 음량 (LUFS, 기본: -16)")
 @click.option("--whisper-model", type=str, default=None, help="Whisper 모델 (기본: medium)")
 @click.option("--language", type=str, default=None, help="언어 코드 (기본: ko)")
@@ -56,6 +58,8 @@ def auto(
     silence_threshold: float | None,
     silence_duration: float | None,
     silence_padding: float | None,
+    no_auto_calibrate: bool,
+    aggressive: bool,
     target_lufs: float | None,
     whisper_model: str | None,
     language: str | None,
@@ -68,8 +72,8 @@ def auto(
 
     예시:
         premiere-auto-edit auto my_video.mp4
-        premiere-auto-edit auto my_video.mp4 --preset youtube --no-subtitle
-        premiere-auto-edit auto my_video.mp4 --silence-threshold -35 -o ./output
+        premiere-auto-edit auto my_video.mp4 --aggressive --no-subtitle
+        premiere-auto-edit auto my_video.mp4 --silence-threshold -25 -o ./output
     """
     _setup_logging(verbose)
 
@@ -81,10 +85,21 @@ def auto(
     overrides: dict = {}
     if silence_threshold is not None:
         overrides.setdefault("silence", {})["threshold_db"] = silence_threshold
+        overrides.setdefault("silence", {})["auto_calibrate"] = False  # 수동 지정 시 자동 끔
     if silence_duration is not None:
         overrides.setdefault("silence", {})["min_duration"] = silence_duration
     if silence_padding is not None:
         overrides.setdefault("silence", {})["padding"] = silence_padding
+    if no_auto_calibrate:
+        overrides.setdefault("silence", {})["auto_calibrate"] = False
+    if aggressive:
+        # 공격적 모드: 작은 소리도 최대한 삭제
+        overrides.setdefault("silence", {})["threshold_db"] = -25.0
+        overrides.setdefault("silence", {})["min_duration"] = 0.2
+        overrides.setdefault("silence", {})["padding"] = 0.08
+        overrides.setdefault("silence", {})["auto_calibrate"] = True
+        overrides.setdefault("editing", {})["min_clip_length"] = 0.2
+        overrides.setdefault("editing", {})["merge_gap"] = 0.1
     if target_lufs is not None:
         overrides.setdefault("loudness", {})["target_lufs"] = target_lufs
     if whisper_model is not None:

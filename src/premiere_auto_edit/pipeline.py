@@ -67,16 +67,23 @@ def run_pipeline(
             f"{meta.duration_seconds:.1f}초[/dim]"
         )
 
-        # ── Step 2: 무음 감지 ──
-        task = progress.add_task("2/5  무음 감지 중...", total=None)
-        silent_segments = detect_silence(
+        # ── Step 2: 무음 감지 (자동 캘리브레이션 포함) ──
+        if config.silence.auto_calibrate:
+            task = progress.add_task("2/5  오디오 분석 + 무음 감지 중...", total=None)
+        else:
+            task = progress.add_task("2/5  무음 감지 중...", total=None)
+
+        silent_segments, actual_threshold = detect_silence(
             input_path,
             threshold_db=config.silence.threshold_db,
             min_duration=config.silence.min_duration,
             duration_seconds=meta.duration_seconds,
+            auto_calibrate=config.silence.auto_calibrate,
         )
         progress.update(task, description="2/5  무음 감지 ✓")
         progress.remove_task(task)
+        if config.silence.auto_calibrate:
+            console.print(f"  [dim]→ 자동 임계값: {actual_threshold}dB[/dim]")
         console.print(f"  [dim]→ {len(silent_segments)}개 무음 구간 발견[/dim]")
 
         # ── Step 3: 음량 분석 ──
