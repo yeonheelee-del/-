@@ -37,7 +37,7 @@ def detect_silence(
         "-f", "null",
         "-",
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
     stderr = result.stderr
 
     return parse_silencedetect_output(stderr, duration_seconds)

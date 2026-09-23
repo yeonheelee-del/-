@@ -28,7 +28,7 @@ def extract_audio(input_path: Path, output_path: Path, sample_rate: int = 16000)
         str(output_path),
     ]
     result = subprocess.run(
-        cmd, capture_output=True, text=True, timeout=300,
+        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
     )
     if result.returncode != 0:
         raise RuntimeError(f"오디오 추출 실패: {result.stderr.strip()}")

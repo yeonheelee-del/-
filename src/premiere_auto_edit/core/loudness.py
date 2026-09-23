@@ -30,7 +30,7 @@ def measure_loudness(
         "-f", "null",
         "-",
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
 
     loudness_data = _parse_loudnorm_json(result.stderr)
 
