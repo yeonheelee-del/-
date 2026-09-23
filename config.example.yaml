@@ -1,0 +1,26 @@
+# premiere-auto-edit 설정 파일 예시
+# CLI 인자가 이 파일보다 우선합니다.
+
+silence:
+  threshold_db: -40       # dB — 이보다 조용하면 무음으로 판정
+  min_duration: 0.5       # 초 — 최소 무음 길이
+  padding: 0.15           # 초 — 발화 앞뒤로 남길 여유
+
+loudness:
+  target_lufs: -16        # 목표 음량 (YouTube: -14, 팟캐스트: -16, 방송: -24)
+  true_peak: -1.5         # True Peak 상한
+  lra: 11                 # Loudness Range
+
+subtitle:
+  whisper_model: "medium" # tiny, base, small, medium, large-v3
+  language: "ko"          # 언어 코드
+  max_line_length: 40     # 자막 한 줄 최대 글자 수
+  max_lines: 2            # 자막 최대 줄 수
+
+editing:
+  min_clip_length: 0.3    # 초 — 이보다 짧은 클립은 병합
+  merge_gap: 0.2          # 초 — 이보다 가까운 클립은 하나로 합침
+
+export:
+  include_srt: true       # SRT 자막 파일 생성
+  srt_bom: true           # UTF-8 BOM 추가 (한국어 호환)

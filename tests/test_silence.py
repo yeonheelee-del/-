@@ -1,0 +1,63 @@
+"""무음 감지 파서 테스트."""
+
+from premiere_auto_edit.core.silence import parse_silencedetect_output
+
+
+SAMPLE_FFMPEG_OUTPUT = """
+[silencedetect @ 0x55a1b2c3d4e5] silence_start: 5.000
+[silencedetect @ 0x55a1b2c3d4e5] silence_end: 8.000 | silence_duration: 3.000
+[silencedetect @ 0x55a1b2c3d4e5] silence_start: 15.000
+[silencedetect @ 0x55a1b2c3d4e5] silence_end: 17.500 | silence_duration: 2.500
+[silencedetect @ 0x55a1b2c3d4e5] silence_start: 30.000
+[silencedetect @ 0x55a1b2c3d4e5] silence_end: 35.000 | silence_duration: 5.000
+"""
+
+
+def test_parse_basic():
+    """기본 파싱: 시작과 끝이 쌍으로 매칭."""
+    segments = parse_silencedetect_output(SAMPLE_FFMPEG_OUTPUT)
+    assert len(segments) == 3
+    assert segments[0].start == 5.0
+    assert segments[0].end == 8.0
+    assert abs(segments[0].duration - 3.0) < 0.001
+
+
+def test_parse_empty():
+    """무음이 없는 경우."""
+    segments = parse_silencedetect_output("No silence detected")
+    assert segments == []
+
+
+def test_parse_silence_at_end():
+    """영상 끝까지 무음 (end 없이 start만 있는 경우)."""
+    stderr = """
+[silencedetect @ 0x1234] silence_start: 50.000
+"""
+    segments = parse_silencedetect_output(stderr, duration_seconds=60.0)
+    assert len(segments) == 1
+    assert segments[0].start == 50.0
+    assert segments[0].end == 60.0
+
+
+def test_parse_silence_at_end_no_duration():
+    """영상 끝까지 무음인데 total duration도 모르는 경우."""
+    stderr = """
+[silencedetect @ 0x1234] silence_start: 50.000
+"""
+    segments = parse_silencedetect_output(stderr, duration_seconds=None)
+    assert segments == []  # 끝을 모르면 건너뜀
+
+
+def test_parse_mixed_output():
+    """다른 FFmpeg 출력과 섞여 있는 경우."""
+    stderr = """
+frame=   30 fps=0.0 q=-0.0 size=N/A time=00:00:01.00 bitrate=N/A
+[silencedetect @ 0x1234] silence_start: 1.500
+frame=   90 fps=0.0 q=-0.0 size=N/A time=00:00:03.00 bitrate=N/A
+[silencedetect @ 0x1234] silence_end: 3.200 | silence_duration: 1.700
+video:0kB audio:192kB subtitle:0kB other streams:0kB
+"""
+    segments = parse_silencedetect_output(stderr)
+    assert len(segments) == 1
+    assert segments[0].start == 1.5
+    assert segments[0].end == 3.2
