@@ -1,6 +1,7 @@
 """무음 감지 파서 테스트."""
 
-from premiere_auto_edit.core.silence import parse_silencedetect_output
+from premiere_auto_edit.core.models import SilentSegment
+from premiere_auto_edit.core.silence import merge_segments, parse_silencedetect_output
 
 
 SAMPLE_FFMPEG_OUTPUT = """
@@ -61,3 +62,47 @@ video:0kB audio:192kB subtitle:0kB other streams:0kB
     assert len(segments) == 1
     assert segments[0].start == 1.5
     assert segments[0].end == 3.2
+
+
+def test_merge_segments_overlap():
+    """겹치는 무음 구간 병합."""
+    segs = [
+        SilentSegment(start=1.0, end=3.0),
+        SilentSegment(start=2.5, end=5.0),
+        SilentSegment(start=8.0, end=10.0),
+    ]
+    merged = merge_segments(segs, merge_gap=0.0)
+    assert len(merged) == 2
+    assert merged[0].start == 1.0
+    assert merged[0].end == 5.0
+    assert merged[1].start == 8.0
+    assert merged[1].end == 10.0
+
+
+def test_merge_segments_gap():
+    """가까운 무음 구간 병합 (merge_gap 이내)."""
+    segs = [
+        SilentSegment(start=1.0, end=3.0),
+        SilentSegment(start=3.2, end=5.0),
+    ]
+    merged = merge_segments(segs, merge_gap=0.3)
+    assert len(merged) == 1
+    assert merged[0].start == 1.0
+    assert merged[0].end == 5.0
+
+
+def test_merge_segments_empty():
+    """빈 리스트 병합."""
+    assert merge_segments([]) == []
+
+
+def test_merge_segments_unsorted():
+    """정렬되지 않은 입력도 처리."""
+    segs = [
+        SilentSegment(start=5.0, end=7.0),
+        SilentSegment(start=1.0, end=3.0),
+    ]
+    merged = merge_segments(segs, merge_gap=0.0)
+    assert len(merged) == 2
+    assert merged[0].start == 1.0
+    assert merged[1].start == 5.0

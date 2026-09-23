@@ -93,12 +93,11 @@ def auto(
     if no_auto_calibrate:
         overrides.setdefault("silence", {})["auto_calibrate"] = False
     if aggressive:
-        # 공격적 모드: 작은 소리도 최대한 삭제
-        overrides.setdefault("silence", {})["threshold_db"] = -25.0
+        overrides.setdefault("silence", {})["aggressive"] = True
         overrides.setdefault("silence", {})["min_duration"] = 0.2
-        overrides.setdefault("silence", {})["padding"] = 0.08
+        overrides.setdefault("silence", {})["padding"] = 0.06
         overrides.setdefault("silence", {})["auto_calibrate"] = True
-        overrides.setdefault("editing", {})["min_clip_length"] = 0.2
+        overrides.setdefault("editing", {})["min_clip_length"] = 0.15
         overrides.setdefault("editing", {})["merge_gap"] = 0.1
     if target_lufs is not None:
         overrides.setdefault("loudness", {})["target_lufs"] = target_lufs
@@ -136,14 +135,14 @@ def silence(input_video: str, threshold: float, duration: float, verbose: bool) 
     from .core.silence import detect_silence
 
     meta = probe_fn(Path(input_video))
-    segments = detect_silence(
+    segments, used_threshold = detect_silence(
         Path(input_video),
         threshold_db=threshold,
         min_duration=duration,
         duration_seconds=meta.duration_seconds,
     )
 
-    console.print(f"\n[bold]무음 구간 {len(segments)}개 발견[/bold]\n")
+    console.print(f"\n[bold]무음 구간 {len(segments)}개 발견[/bold] (임계값: {used_threshold}dB)\n")
     total_silence = 0.0
     for i, seg in enumerate(segments, 1):
         console.print(

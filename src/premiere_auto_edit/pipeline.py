@@ -68,7 +68,9 @@ def run_pipeline(
         )
 
         # ── Step 2: 무음 감지 (자동 캘리브레이션 포함) ──
-        if config.silence.auto_calibrate:
+        if config.silence.aggressive:
+            task = progress.add_task("2/5  오디오 분석 + 2-패스 무음 감지 중...", total=None)
+        elif config.silence.auto_calibrate:
             task = progress.add_task("2/5  오디오 분석 + 무음 감지 중...", total=None)
         else:
             task = progress.add_task("2/5  무음 감지 중...", total=None)
@@ -79,6 +81,7 @@ def run_pipeline(
             min_duration=config.silence.min_duration,
             duration_seconds=meta.duration_seconds,
             auto_calibrate=config.silence.auto_calibrate,
+            aggressive=config.silence.aggressive,
         )
         progress.update(task, description="2/5  무음 감지 ✓")
         progress.remove_task(task)
